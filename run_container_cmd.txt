@@ -1,0 +1,1 @@
+docker run --gpus all -it --rm -p 8888:8888 -v c:/Users/olive/OneDrive/Documents:/tf/nlp tensorflow/tensorflow:2.7.1-gpu-jupyter
