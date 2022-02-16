@@ -6,14 +6,9 @@ IN1 = stepper(17)
 IN2 = stepper(27)
 IN3 = stepper(22)
 IN4 = stepper(23)
-stepPins = [IN1,IN2,IN3,IN4] # Motor GPIO pins</p><p>
+step_pins = [IN1,IN2,IN3,IN4] # Motor GPIO pins</p><p>
 
-def stepperTurn(direction, stepSeqLength, stepWait, duration):
-    # Direction
-    stepDir = 1        # Set to 1 for clockwise
-    if direction == 'ccw':
-        stepDir = -1         # Set to -1 for anti-clockwise
-    
+def stepperTurn(direction, power, step_wait, duration, rotations):
     # Full sequence has more power but rotates slower
     seq = [[1,0,0,1],
            [1,0,0,0],
@@ -23,38 +18,48 @@ def stepperTurn(direction, stepSeqLength, stepWait, duration):
            [0,0,1,0],
            [0,0,1,1],
            [0,0,0,1]]
-    
+    # Direction
+    if direction == 'ccw':
+        seq.reverse()
     # Half sequence rotates faster with less power
-    if stepSeqLength == 'half':
+    if power == 'half':
         seq = seq[1::2]
       
     # Set time between steps
-    waitTime = 0.004
-    if stepWait > 0.002:
-        waitTime = stepWait
-
-    stepCounter = 0    
-    stepCount = len(seq)
-    timeStart = time.time()
+    wait_time = 0.004
+    if step_wait > 0.002:
+        wait_time = step_wait
+    
+    total_steps = int(rotations * 512)
+    step_counter = 0
+    time_start = time.time()
     
     while True:
-        for pin in range(0,4):
-            xPin=stepPins[pin]          # Get GPIO
-            if seq[stepCounter][pin]!=0:
-                xPin.on()
-            else:
-                xPin.off()
-        stepCounter += stepDir
-        if (stepCounter >= stepCount):
-            stepCounter = 0
-        if (stepCounter < 0):
-            stepCounter = stepCount+stepDir
-        print(stepCounter)
-        time.sleep(waitTime)     # Wait before moving on
-        if (time.time() > (timeStart+ duration)):
-            for pin in range(0,4):
-                xPin = stepPins[pin]
-                xPin.off()
-            break
-        
-#stepperTurn(direction='cw', stepSeqLength='full', stepWait= .006, duration=60)
+        for pins in seq:     # iterates through sequence
+            for pin_num,pin_state in enumerate(pins):                 # iterates through pins
+                
+                x_pin=step_pins[pin_num]           # Get GPIO
+                if pin_state == 1:
+                    x_pin.on()
+                else:
+                    x_pin.off()
+            time.sleep(wait_time)                         
+
+        step_counter += 1        
+        # end by time
+        if type(duration) == int:    
+            if (time.time() > (time_start + duration)):
+                print('stepper stopped by time')
+                for pin in range(0,4):
+                    x_pin = step_pins[pin]
+                    x_pin.off()
+                break
+        # End By Rotation
+        if type(total_steps) == int:
+            if step_counter >= total_steps:
+                print('stepper stopped by step count')
+                for pin in range(0,4):
+                    step_pins[pin].off()
+                break
+#stepperTurn(direction='cw', power='full', step_wait= .005, duration='off', rotations=1) 
+
